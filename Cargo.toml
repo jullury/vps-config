@@ -3,6 +3,9 @@ name = "vps-config"
 version = "0.1.0"
 edition = "2021"
 description = "Remote VPS provisioning wizard"
+authors = ["Jullury"]
+license = "MIT"
+repository = "https://github.com/jullury/vps-config"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
