@@ -1,8 +1,6 @@
 use clap::Parser;
-use std::path::{Path, PathBuf};
-
-use cli::args::Args;
-use config::loader::load_config;
+use colored::Colorize;
+use std::path::Path;
 
 mod cli;
 mod config;
@@ -10,29 +8,45 @@ mod ssh;
 mod os;
 mod modules;
 
-fn default_config_path() -> PathBuf {
-    let local = PathBuf::from("config.toml");
-    if local.exists() {
-        return local;
-    }
-    dirs::config_dir()
-        .map(|d| d.join("vps-config/config.toml"))
-        .filter(|p| p.exists())
-        .unwrap_or(local)
-}
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let args = Args::parse();
+    let args = cli::args::Args::parse();
+
+    println!("{}", "=== VPS Config Wizard ===".cyan().bold());
 
     let config = if let Some(ref path) = args.config {
-        load_config(Path::new(path))?
+        config::loader::load_config(Path::new(path))?
     } else {
-        load_config(&default_config_path())?
+        let default_path = Path::new("config.toml");
+        if default_path.exists() {
+            config::loader::load_config(default_path)?
+        } else {
+            cli::prompts::run_wizard()?
+        }
     };
 
-    println!("vps-config - Remote VPS Provisioning Wizard");
-    println!("Loaded config for: {}", config.vps.ip);
+    println!("\n{} Connecting to {}...", "->".blue(), config.vps.ip);
+    let client = ssh::client::SshClient::new(&config.vps)?;
+    let mut session = client.connect().await?;
+    let mut executor = ssh::executor::Executor::new(&mut session);
+
+    println!("{} Detecting OS...", "->".blue());
+    let distro = os::detect::detect_distro(&mut executor).await?;
+    println!("{} Detected: {:?}", "✓".green(), distro);
+
+    let pkg: Box<dyn os::PackageManager> = match distro {
+        os::detect::Distro::Debian | os::detect::Distro::Ubuntu => {
+            Box::new(os::apt::AptManager::new())
+        }
+        os::detect::Distro::RHEL | os::detect::Distro::CentOS | os::detect::Distro::Fedora => {
+            Box::new(os::dnf::DnfManager::new())
+        }
+    };
+
+    println!("{} Updating package lists...", "->".blue());
+    pkg.update(&mut executor).await?;
+
+    modules::run_modules(&mut executor, &*pkg, &config, &distro).await?;
 
     Ok(())
 }
