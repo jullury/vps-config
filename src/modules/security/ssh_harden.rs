@@ -7,13 +7,15 @@ use crate::modules::Module;
 
 pub struct SshHardenModule {
     password_auth: bool,
+    allow_root_login: bool,
     new_port: Option<u16>,
 }
 
 impl SshHardenModule {
-    pub fn new(password_auth: bool, new_port: Option<u16>) -> Self {
+    pub fn new(password_auth: bool, allow_root_login: bool, new_port: Option<u16>) -> Self {
         Self {
             password_auth,
+            allow_root_login,
             new_port,
         }
     }
@@ -42,6 +44,13 @@ impl Module for SshHardenModule {
 
             executor.run("sed -i 's/^#\\?PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config").await?;
             executor.run("sed -i 's/^#\\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config").await?;
+        }
+
+        // Set PermitRootLogin based on config
+        if self.allow_root_login {
+            executor.run("sed -i 's/^#\\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config").await?;
+        } else {
+            executor.run("sed -i 's/^#\\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config").await?;
         }
 
         if let Some(port) = self.new_port {

@@ -116,6 +116,11 @@ pub fn run_wizard() -> Result<Config> {
         .default(false)
         .interact()?;
 
+    let ssh_allow_root_login = Confirm::new()
+        .with_prompt("Allow SSH root login?")
+        .default(false)
+        .interact()?;
+
     let ssh_public_key_path = if !ssh_password_auth {
         let keys = detect_local_keys();
         if keys.is_empty() {
@@ -240,6 +245,7 @@ pub fn run_wizard() -> Result<Config> {
             create_user: if create_user.is_empty() { None } else { Some(create_user) },
             user_password,
             ssh_password_auth,
+            ssh_allow_root_login,
             ssh_public_key_path,
             firewall,
             fail2ban,

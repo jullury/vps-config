@@ -60,6 +60,7 @@ pub async fn run_modules(
         if !config.security.ssh_password_auth {
             security::ssh_harden::SshHardenModule::new(
                 config.security.ssh_password_auth,
+                config.security.ssh_allow_root_login,
                 None,
             ).apply(executor, pkg).await?;
         }

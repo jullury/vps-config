@@ -31,6 +31,8 @@ pub struct SecurityConfig {
     #[serde(default = "default_true")]
     pub ssh_password_auth: bool,
     #[serde(default = "default_true")]
+    pub ssh_allow_root_login: bool,
+    #[serde(default = "default_true")]
     pub firewall: bool,
     #[serde(default = "default_true")]
     pub fail2ban: bool,
