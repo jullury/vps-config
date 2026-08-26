@@ -34,7 +34,7 @@ impl<'a> Module for SshHardenModule<'a> {
             // SAFETY: Verify at least one SSH key exists before disabling password auth.
             // Without this check, users can be permanently locked out of their VPS.
             let (_, exit_code) = executor.run_with_output(
-                "test -s ~/.ssh/authorized_keys && echo keys_found || echo no_keys"
+                "test -s ~/.ssh/authorized_keys"
             ).await?;
             if exit_code != 0 {
                 anyhow::bail!(
