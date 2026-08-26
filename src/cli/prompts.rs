@@ -108,7 +108,7 @@ pub fn run_wizard() -> Result<Config> {
 
     let create_user: String = Input::new()
         .with_prompt("Create non-root user (empty to skip)")
-        .default("deploy".to_string())
+        .allow_empty(true)
         .interact_text()?;
 
     let user_password = if !create_user.is_empty() {
