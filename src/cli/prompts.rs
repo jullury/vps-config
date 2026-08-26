@@ -112,9 +112,18 @@ pub fn run_wizard() -> Result<Config> {
         .interact_text()?;
 
     let user_password = if !create_user.is_empty() {
-        Some(Password::new()
-            .with_prompt(&format!("Password for '{}'", create_user))
-            .interact()?)
+        loop {
+            let pass = Password::new()
+                .with_prompt(&format!("Password for '{}'", create_user))
+                .interact()?;
+            let confirm = Password::new()
+                .with_prompt("Confirm password")
+                .interact()?;
+            if pass == confirm {
+                break Some(pass);
+            }
+            println!("  {} Passwords don't match, try again", "✗".red());
+        }
     } else {
         None
     };
