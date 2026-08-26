@@ -7,11 +7,12 @@ use crate::modules::Module;
 
 pub struct DockerModule<'a> {
     distro: &'a Distro,
+    user: Option<&'a str>,
 }
 
 impl<'a> DockerModule<'a> {
-    pub fn new(distro: &'a Distro) -> Self {
-        Self { distro }
+    pub fn new(distro: &'a Distro, user: Option<&'a str>) -> Self {
+        Self { distro, user }
     }
 }
 
@@ -47,6 +48,11 @@ impl<'a> Module for DockerModule<'a> {
 
         pkg.enable_service(executor, "docker").await?;
         pkg.start_service(executor, "docker").await?;
+
+        // Add user to docker group
+        if let Some(user) = self.user {
+            executor.run(&format!("sudo usermod -aG docker {}", user)).await?;
+        }
 
         println!("  {} Docker installed", "✓".green());
         Ok(())

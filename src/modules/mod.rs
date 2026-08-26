@@ -77,7 +77,7 @@ pub async fn run_services_and_devtools(
         println!("\n{}", "Services:".green().bold());
 
         if config.services.docker {
-            services::docker::DockerModule::new(distro).apply(executor, pkg).await?;
+            services::docker::DockerModule::new(distro, config.security.create_user.as_deref()).apply(executor, pkg).await?;
         }
         if config.services.nginx {
             services::nginx::NginxModule.apply(executor, pkg).await?;
