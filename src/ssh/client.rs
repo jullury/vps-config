@@ -52,7 +52,7 @@ impl SshSession {
         channel.exec(true, command).await?;
 
         let (output, exit_status) = self.read_channel(&mut channel).await?;
-        let status = exit_status.context("Channel did not exit cleanly")?;
+        let status = exit_status.unwrap_or(0);
         if status != 0 {
             anyhow::bail!("Command failed (exit {}): {}", status, output);
         }
@@ -64,8 +64,8 @@ impl SshSession {
         channel.exec(true, command).await?;
 
         let (output, exit_status) = self.read_channel(&mut channel).await?;
-        let status = exit_status.context("Channel did not exit cleanly")?;
-        Ok((output, status as i32))
+        let status = exit_status.unwrap_or(0) as i32;
+        Ok((output, status))
     }
 }
 
