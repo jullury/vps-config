@@ -27,11 +27,16 @@ impl<'a> Module for DockerModule<'a> {
 
         match self.distro {
             Distro::Debian | Distro::Ubuntu => {
+                let repo_url = match self.distro {
+                    Distro::Ubuntu => "https://download.docker.com/linux/ubuntu",
+                    Distro::Debian => "https://download.docker.com/linux/debian",
+                    _ => unreachable!(),
+                };
                 pkg.install(executor, &["ca-certificates", "curl", "gnupg"]).await?;
                 executor.run("install -m 0755 -d /etc/apt/keyrings").await?;
-                executor.run("curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg").await?;
+                executor.run(&format!("curl -fsSL {repo_url}/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg")).await?;
                 executor.run("chmod a+r /etc/apt/keyrings/docker.gpg").await?;
-                executor.run("echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable\" > /etc/apt/sources.list.d/docker.list").await?;
+                executor.run(&format!("echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] {repo_url} $(lsb_release -cs) stable\" > /etc/apt/sources.list.d/docker.list")).await?;
                 pkg.update(executor).await?;
                 pkg.install(executor, &["docker-ce", "docker-ce-cli", "containerd.io", "docker-compose-plugin"]).await?;
             }

@@ -1,14 +1,22 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use colored::Colorize;
-use crate::os::PackageManager;
+use crate::os::{PackageManager, detect::Distro};
 use crate::ssh::executor::Executor;
 use crate::modules::Module;
 
-pub struct RedisModule;
+pub struct RedisModule<'a> {
+    distro: &'a Distro,
+}
+
+impl<'a> RedisModule<'a> {
+    pub fn new(distro: &'a Distro) -> Self {
+        Self { distro }
+    }
+}
 
 #[async_trait(?Send)]
-impl Module for RedisModule {
+impl<'a> Module for RedisModule<'a> {
     fn name(&self) -> &str { "redis" }
 
     async fn apply(&self, executor: &mut Executor<'_>, pkg: &dyn PackageManager) -> Result<()> {
@@ -19,8 +27,13 @@ impl Module for RedisModule {
 
         pkg.install(executor, &["redis"]).await?;
 
-        executor.run("sed -i 's/^bind .*/bind 127.0.0.1/' /etc/redis/redis.conf").await?;
-        executor.run("sed -i 's/^# requirepass .*/requirepass/' /etc/redis/redis.conf").await?;
+        let conf_path = match self.distro {
+            Distro::Debian | Distro::Ubuntu => "/etc/redis/redis.conf",
+            Distro::RHEL | Distro::Fedora => "/etc/redis.conf",
+            _ => anyhow::bail!("Redis not supported on this distro"),
+        };
+
+        executor.run(&format!("sed -i 's/^bind .*/bind 127.0.0.1/' {conf_path}")).await?;
 
         pkg.enable_service(executor, "redis").await?;
         pkg.start_service(executor, "redis").await?;
