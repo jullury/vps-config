@@ -27,6 +27,7 @@ pub struct SshSession {
 impl SshSession {
     async fn read_channel(&self, channel: &mut Channel<client::Msg>) -> Result<(String, Option<u32>)> {
         let mut output = String::new();
+        let mut stderr = String::new();
         let mut exit_status: Option<u32> = None;
 
         loop {
@@ -37,11 +38,24 @@ impl SshSession {
                 ChannelMsg::Data { ref data } => {
                     output.push_str(&String::from_utf8_lossy(data));
                 }
+                ChannelMsg::ExtendedData { ref data, ext } => {
+                    if ext == 1 {
+                        stderr.push_str(&String::from_utf8_lossy(data));
+                    }
+                }
                 ChannelMsg::ExitStatus { exit_status: status } => {
                     exit_status = Some(status);
                 }
                 _ => {}
             }
+        }
+
+        // Merge stderr into output for error reporting
+        if !stderr.is_empty() {
+            if !output.is_empty() {
+                output.push('\n');
+            }
+            output.push_str(&stderr);
         }
 
         Ok((output, exit_status))
