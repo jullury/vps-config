@@ -65,7 +65,25 @@ async fn main() -> anyhow::Result<()> {
         println!("\n{} Reconnecting after SSH hardening...", "->".blue());
         drop(executor);
         drop(session);
-        let mut session = client.connect().await?;
+
+        // If root login was disabled, reconnect as the created user
+        let reconnect_config = if !config.security.ssh_allow_root_login {
+            if let Some(ref user) = config.security.create_user {
+                let mut cfg = config.vps.clone();
+                cfg.user = user.clone();
+                // Use the new user's SSH keys (copied from root)
+                cfg.auth = "key".to_string();
+                cfg.password = None;
+                cfg
+            } else {
+                config.vps.clone()
+            }
+        } else {
+            config.vps.clone()
+        };
+
+        let reconnect_client = ssh::client::SshClient::new(&reconnect_config)?;
+        let mut session = reconnect_client.connect().await?;
         let mut executor = ssh::executor::Executor::new(&mut session);
         modules::run_services_and_devtools(&mut executor, &*pkg, &config, &distro).await?;
     } else {
