@@ -22,14 +22,14 @@ impl<'a> Module for UsersModule<'a> {
     async fn apply(&self, executor: &mut Executor<'_>, _pkg: &dyn PackageManager) -> Result<()> {
         println!("  Creating user: {}", self.username);
 
+        // Ensure sudo group exists (Debian) or wheel (RHEL)
+        executor.run("groupadd -f sudo || groupadd -f wheel").await?;
+
         // Create user with sudo
         executor.run(&format!(
             "id {} >/dev/null 2>&1 || useradd -m -s /bin/bash -G sudo {}",
             self.username, self.username
         )).await?;
-
-        // Ensure sudo group exists (Debian) or wheel (RHEL)
-        executor.run("groupadd -f sudo || groupadd -f wheel").await?;
         executor.run(&format!("usermod -aG sudo {} || usermod -aG wheel {}", self.username, self.username)).await?;
 
         // Set up passwordless sudo
@@ -41,7 +41,7 @@ impl<'a> Module for UsersModule<'a> {
 
         // Copy root's SSH keys to new user
         executor.run(&format!(
-            "mkdir -p /home/{}/.ssh && cp /root/.ssh/* /home/{}/.ssh/ && chown -R {}:{} /home/{}/.ssh && chmod 700 /home/{}/.ssh && chmod 600 /home/{}/.ssh/*",
+            "mkdir -p /home/{}/.ssh && cp -a /root/.ssh/. /home/{}/.ssh/ && chown -R {}:{} /home/{}/.ssh && chmod 700 /home/{}/.ssh && chmod 600 /home/{}/.ssh/*",
             self.username, self.username, self.username, self.username, self.username, self.username, self.username
         )).await?;
 
