@@ -31,6 +31,19 @@ impl<'a> Module for SshHardenModule<'a> {
         executor.run("cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak").await?;
 
         if !self.password_auth {
+            // SAFETY: Verify at least one SSH key exists before disabling password auth.
+            // Without this check, users can be permanently locked out of their VPS.
+            let (_, exit_code) = executor.run_with_output(
+                "test -s ~/.ssh/authorized_keys && echo keys_found || echo no_keys"
+            ).await?;
+            if exit_code != 0 {
+                anyhow::bail!(
+                    "SSH hardening aborted: ~/.ssh/authorized_keys does not exist or is empty. \
+                     Add an SSH public key first, then re-run. \
+                     Without password auth, you would be locked out of your VPS."
+                );
+            }
+
             executor.run("sed -i 's/^#\\?PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config").await?;
             executor.run("sed -i 's/^#\\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config").await?;
         }

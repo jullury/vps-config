@@ -39,6 +39,9 @@ pub async fn run_modules(
             security::fail2ban::Fail2BanModule.apply(executor, pkg).await?;
         }
 
+        // SSH hardening requires explicit opt-in: set ssh_password_auth = false in config.
+        // The schema default is true (password auth allowed), so hardening only runs
+        // when the user deliberately disables it.
         if !config.security.ssh_password_auth {
             security::ssh_harden::SshHardenModule::new(
                 config.security.ssh_password_auth,
