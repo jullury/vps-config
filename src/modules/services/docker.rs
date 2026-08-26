@@ -17,8 +17,6 @@ impl<'a> DockerModule<'a> {
 
 #[async_trait(?Send)]
 impl<'a> Module for DockerModule<'a> {
-    fn name(&self) -> &str { "docker" }
-
     async fn apply(&self, executor: &mut Executor<'_>, pkg: &dyn PackageManager) -> Result<()> {
         if pkg.is_installed(executor, "docker").await? {
             println!("  {} Docker already installed", "✓".green());
@@ -45,7 +43,6 @@ impl<'a> Module for DockerModule<'a> {
                 executor.run("dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo").await?;
                 pkg.install(executor, &["docker-ce", "docker-ce-cli", "containerd.io", "docker-compose-plugin"]).await?;
             }
-            _ => anyhow::bail!("Docker not supported on this distro"),
         }
 
         pkg.enable_service(executor, "docker").await?;

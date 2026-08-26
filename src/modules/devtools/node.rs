@@ -17,8 +17,6 @@ impl<'a> NodeModule<'a> {
 
 #[async_trait(?Send)]
 impl<'a> Module for NodeModule<'a> {
-    fn name(&self) -> &str { "node" }
-
     async fn apply(&self, executor: &mut Executor<'_>, _pkg: &dyn PackageManager) -> Result<()> {
         let (output, _) = executor.run_with_output("command -v nvm || true").await?;
         if !output.contains("nvm") {

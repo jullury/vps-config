@@ -17,8 +17,6 @@ impl<'a> FirewallModule<'a> {
 
 #[async_trait(?Send)]
 impl<'a> Module for FirewallModule<'a> {
-    fn name(&self) -> &str { "firewall" }
-
     async fn apply(&self, executor: &mut Executor<'_>, pkg: &dyn PackageManager) -> Result<()> {
         match self.distro {
             Distro::Debian | Distro::Ubuntu => {

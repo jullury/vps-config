@@ -12,7 +12,6 @@ use crate::ssh::executor::Executor;
 
 #[async_trait(?Send)]
 pub trait Module {
-    fn name(&self) -> &str;
     async fn apply(&self, executor: &mut Executor<'_>, pkg: &dyn PackageManager) -> Result<()>;
 }
 

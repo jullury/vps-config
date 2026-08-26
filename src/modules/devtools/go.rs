@@ -17,8 +17,6 @@ impl<'a> GoModule<'a> {
 
 #[async_trait(?Send)]
 impl<'a> Module for GoModule<'a> {
-    fn name(&self) -> &str { "go" }
-
     async fn apply(&self, executor: &mut Executor<'_>, _pkg: &dyn PackageManager) -> Result<()> {
         let (output, _) = executor.run_with_output("go version 2>/dev/null || true").await?;
         if output.contains("go") {

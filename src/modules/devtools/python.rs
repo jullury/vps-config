@@ -17,8 +17,6 @@ impl<'a> PythonModule<'a> {
 
 #[async_trait(?Send)]
 impl<'a> Module for PythonModule<'a> {
-    fn name(&self) -> &str { "python" }
-
     async fn apply(&self, executor: &mut Executor<'_>, pkg: &dyn PackageManager) -> Result<()> {
         pkg.install(executor, &[
             "build-essential", "libssl-dev", "zlib1g-dev", "libbz2-dev",

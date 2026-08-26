@@ -17,8 +17,6 @@ impl<'a> PostgresModule<'a> {
 
 #[async_trait(?Send)]
 impl<'a> Module for PostgresModule<'a> {
-    fn name(&self) -> &str { "postgres" }
-
     async fn apply(&self, executor: &mut Executor<'_>, pkg: &dyn PackageManager) -> Result<()> {
         if pkg.is_installed(executor, "postgresql").await? {
             println!("  {} PostgreSQL already installed", "✓".green());
@@ -44,7 +42,6 @@ impl<'a> Module for PostgresModule<'a> {
                 pkg.enable_service(executor, service).await?;
                 pkg.start_service(executor, service).await?;
             }
-            _ => anyhow::bail!("PostgreSQL not supported on this distro"),
         }
 
         println!("  {} PostgreSQL installed", "✓".green());

@@ -9,8 +9,6 @@ pub struct NginxModule;
 
 #[async_trait(?Send)]
 impl Module for NginxModule {
-    fn name(&self) -> &str { "nginx" }
-
     async fn apply(&self, executor: &mut Executor<'_>, pkg: &dyn PackageManager) -> Result<()> {
         if pkg.is_installed(executor, "nginx").await? {
             println!("  {} nginx already installed", "✓".green());

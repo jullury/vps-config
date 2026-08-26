@@ -17,8 +17,6 @@ impl<'a> Fail2BanModule<'a> {
 
 #[async_trait(?Send)]
 impl<'a> Module for Fail2BanModule<'a> {
-    fn name(&self) -> &str { "fail2ban" }
-
     async fn apply(&self, executor: &mut Executor<'_>, pkg: &dyn PackageManager) -> Result<()> {
         pkg.install(executor, &["fail2ban"]).await?;
 

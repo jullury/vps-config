@@ -17,8 +17,6 @@ impl<'a> UsersModule<'a> {
 
 #[async_trait(?Send)]
 impl<'a> Module for UsersModule<'a> {
-    fn name(&self) -> &str { "users" }
-
     async fn apply(&self, executor: &mut Executor<'_>, _pkg: &dyn PackageManager) -> Result<()> {
         println!("  Creating user: {}", self.username);
 

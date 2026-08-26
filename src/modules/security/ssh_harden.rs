@@ -21,8 +21,6 @@ impl SshHardenModule {
 
 #[async_trait(?Send)]
 impl Module for SshHardenModule {
-    fn name(&self) -> &str { "ssh_harden" }
-
     async fn apply(&self, executor: &mut Executor<'_>, _pkg: &dyn PackageManager) -> Result<()> {
         println!("  Hardening SSH configuration...");
 

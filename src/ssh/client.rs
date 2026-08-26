@@ -67,13 +67,6 @@ impl SshSession {
         let status = exit_status.context("Channel did not exit cleanly")?;
         Ok((output, status as i32))
     }
-
-    pub async fn close(&mut self) -> Result<()> {
-        self.session
-            .disconnect(Disconnect::ByApplication, "", "English")
-            .await?;
-        Ok(())
-    }
 }
 
 pub struct SshClient {
@@ -85,10 +78,6 @@ impl SshClient {
         Ok(Self {
             config: config.clone(),
         })
-    }
-
-    pub fn config(&self) -> &VpsConfig {
-        &self.config
     }
 
     pub async fn connect(&self) -> Result<SshSession> {

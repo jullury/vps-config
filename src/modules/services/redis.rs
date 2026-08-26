@@ -17,8 +17,6 @@ impl<'a> RedisModule<'a> {
 
 #[async_trait(?Send)]
 impl<'a> Module for RedisModule<'a> {
-    fn name(&self) -> &str { "redis" }
-
     async fn apply(&self, executor: &mut Executor<'_>, pkg: &dyn PackageManager) -> Result<()> {
         if pkg.is_installed(executor, "redis").await? {
             println!("  {} Redis already installed", "✓".green());
@@ -30,7 +28,6 @@ impl<'a> Module for RedisModule<'a> {
         let conf_path = match self.distro {
             Distro::Debian | Distro::Ubuntu => "/etc/redis/redis.conf",
             Distro::RHEL | Distro::Fedora => "/etc/redis.conf",
-            _ => anyhow::bail!("Redis not supported on this distro"),
         };
 
         executor.run(&format!("sed -i 's/^bind .*/bind 127.0.0.1/' {conf_path}")).await?;
