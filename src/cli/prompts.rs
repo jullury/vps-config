@@ -1,5 +1,5 @@
 use anyhow::Result;
-use dialoguer::{Input, Select, Confirm};
+use dialoguer::{Input, Select, Confirm, Password};
 use console::style;
 use colored::Colorize;
 use crate::config::schema::*;
@@ -71,9 +71,9 @@ pub fn run_wizard() -> Result<Config> {
     };
 
     let password = if auth == "password" {
-        Some(Input::new()
+        Some(Password::new()
             .with_prompt("SSH password")
-            .interact_text()?)
+            .interact()?)
     } else {
         None
     };
