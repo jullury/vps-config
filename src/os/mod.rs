@@ -1,13 +1,31 @@
-pub mod detect;
+use anyhow::Result;
+use async_trait::async_trait;
+
 pub mod apt;
+pub mod detect;
 pub mod dnf;
 
-use anyhow::Result;
-
-pub trait PackageManager: Send + Sync {
-    fn update(&self) -> Result<()>;
-    fn install(&self, packages: &[&str]) -> Result<()>;
-    fn is_installed(&self, package: &str) -> Result<bool>;
-    fn enable_service(&self, service: &str) -> Result<()>;
-    fn start_service(&self, service: &str) -> Result<()>;
+#[async_trait(?Send)]
+pub trait PackageManager {
+    async fn update(&self, executor: &mut crate::ssh::executor::Executor<'_>) -> Result<()>;
+    async fn install(
+        &self,
+        executor: &mut crate::ssh::executor::Executor<'_>,
+        packages: &[&str],
+    ) -> Result<()>;
+    async fn is_installed(
+        &self,
+        executor: &mut crate::ssh::executor::Executor<'_>,
+        package: &str,
+    ) -> Result<bool>;
+    async fn enable_service(
+        &self,
+        executor: &mut crate::ssh::executor::Executor<'_>,
+        service: &str,
+    ) -> Result<()>;
+    async fn start_service(
+        &self,
+        executor: &mut crate::ssh::executor::Executor<'_>,
+        service: &str,
+    ) -> Result<()>;
 }
