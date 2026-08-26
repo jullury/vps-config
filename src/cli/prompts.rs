@@ -2,6 +2,7 @@ use anyhow::Result;
 use dialoguer::{Input, Select, Confirm, Password};
 use console::style;
 use colored::Colorize;
+use russh::keys::load_secret_key;
 use crate::config::schema::*;
 
 fn detect_local_keys() -> Vec<String> {
@@ -73,13 +74,20 @@ pub fn run_wizard() -> Result<Config> {
     let key_passphrase = if auth == "key" {
         if let Some(ref path) = key_path {
             let expanded = shellexpand::tilde(path);
-            match std::fs::read_to_string(expanded.as_ref()) {
-                Ok(content) if content.contains("ENCRYPTED") => {
-                    Some(Password::new()
-                        .with_prompt("Key passphrase (key is encrypted)")
-                        .interact()?)
+            // Try loading without passphrase first to detect if encrypted
+            match load_secret_key(expanded.as_ref(), None) {
+                Ok(_) => None, // Key is not encrypted
+                Err(e) => {
+                    let err_str = e.to_string();
+                    if err_str.contains("encrypted") || err_str.contains("Encrypted") || err_str.contains("decrypt") {
+                        Some(Password::new()
+                            .with_prompt("Key passphrase (key is encrypted)")
+                            .interact()?)
+                    } else {
+                        // Some other error, let it fail later with a clear message
+                        None
+                    }
                 }
-                _ => None,
             }
         } else {
             None
