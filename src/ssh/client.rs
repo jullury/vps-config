@@ -25,10 +25,7 @@ pub struct SshSession {
 }
 
 impl SshSession {
-    pub async fn call(&mut self, command: &str) -> Result<String> {
-        let mut channel = self.session.channel_open_session().await?;
-        channel.exec(true, command).await?;
-
+    async fn read_channel(&self, channel: &mut Channel<client::Msg>) -> Result<(String, Option<u32>)> {
         let mut output = String::new();
         let mut exit_status: Option<u32> = None;
 
@@ -47,6 +44,14 @@ impl SshSession {
             }
         }
 
+        Ok((output, exit_status))
+    }
+
+    pub async fn call(&mut self, command: &str) -> Result<String> {
+        let mut channel = self.session.channel_open_session().await?;
+        channel.exec(true, command).await?;
+
+        let (output, exit_status) = self.read_channel(&mut channel).await?;
         let status = exit_status.context("Channel did not exit cleanly")?;
         if status != 0 {
             anyhow::bail!("Command failed (exit {}): {}", status, output);
@@ -58,24 +63,7 @@ impl SshSession {
         let mut channel = self.session.channel_open_session().await?;
         channel.exec(true, command).await?;
 
-        let mut output = String::new();
-        let mut exit_status: Option<u32> = None;
-
-        loop {
-            let Some(msg) = channel.wait().await else {
-                break;
-            };
-            match msg {
-                ChannelMsg::Data { ref data } => {
-                    output.push_str(&String::from_utf8_lossy(data));
-                }
-                ChannelMsg::ExitStatus { exit_status: status } => {
-                    exit_status = Some(status);
-                }
-                _ => {}
-            }
-        }
-
+        let (output, exit_status) = self.read_channel(&mut channel).await?;
         let status = exit_status.context("Channel did not exit cleanly")?;
         Ok((output, status as i32))
     }

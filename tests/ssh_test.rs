@@ -1,6 +1,5 @@
 use vps_config::config::schema::VpsConfig;
 use vps_config::ssh::client::SshClient;
-use vps_config::ssh::executor::Executor;
 
 #[test]
 fn test_ssh_client_creation() {
