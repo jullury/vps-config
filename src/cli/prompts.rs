@@ -64,7 +64,7 @@ pub fn run_wizard() -> Result<Config> {
     let key_path = if auth == "key" {
         Some(Input::new()
             .with_prompt("SSH key path")
-            .default("~/.ssh/id_rsa".to_string())
+            .default("~/.ssh/id_ed25519".to_string())
             .interact_text()?)
     } else {
         None
