@@ -58,7 +58,19 @@ async fn main() -> anyhow::Result<()> {
     println!("{} Updating package lists...", "->".blue());
     pkg.update(&mut executor).await?;
 
-    modules::run_modules(&mut executor, &*pkg, &config, &distro).await?;
+    println!("{} Applying security configuration...", "->".blue());
+    let ssh_hardened = modules::run_security_modules(&mut executor, &*pkg, &config, &distro).await?;
+
+    if ssh_hardened {
+        println!("\n{} Reconnecting after SSH hardening...", "->".blue());
+        drop(executor);
+        drop(session);
+        let mut session = client.connect().await?;
+        let mut executor = ssh::executor::Executor::new(&mut session);
+        modules::run_services_and_devtools(&mut executor, &*pkg, &config, &distro).await?;
+    } else {
+        modules::run_services_and_devtools(&mut executor, &*pkg, &config, &distro).await?;
+    }
 
     Ok(())
 }

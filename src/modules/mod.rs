@@ -15,57 +15,64 @@ pub trait Module {
     async fn apply(&self, executor: &mut Executor<'_>, pkg: &dyn PackageManager) -> Result<()>;
 }
 
-pub async fn run_modules(
+pub async fn run_security_modules(
+    executor: &mut Executor<'_>,
+    pkg: &dyn PackageManager,
+    config: &Config,
+    distro: &Distro,
+) -> Result<bool> {
+    println!("\n{}", "Security:".yellow().bold());
+
+    // Copy SSH public key to connecting user first, so new users inherit it
+    if let Some(ref key_path) = config.security.ssh_public_key_path {
+        println!("  Copying public key to VPS...");
+        let key_content = std::fs::read_to_string(key_path)
+            .map_err(|e| anyhow::anyhow!("Failed to read {}: {}", key_path, e))?;
+        let key_content = key_content.trim();
+
+        executor.run("mkdir -p ~/.ssh && chmod 700 ~/.ssh").await?;
+
+        let escaped_key = key_content.replace('\'', "'\\''");
+        executor.run(&format!(
+            "grep -qxF '{}' ~/.ssh/authorized_keys || echo '{}' >> ~/.ssh/authorized_keys",
+            escaped_key, escaped_key
+        )).await?;
+        executor.run("chmod 600 ~/.ssh/authorized_keys").await?;
+
+        println!("  {} Public key copied", "✓".green());
+    }
+
+    if let Some(ref user) = config.security.create_user {
+        security::users::UsersModule::new(user, config.security.user_password.as_deref()).apply(executor, pkg).await?;
+    }
+
+    if config.security.firewall {
+        security::firewall::FirewallModule::new(distro).apply(executor, pkg).await?;
+    }
+
+    if config.security.fail2ban {
+        security::fail2ban::Fail2BanModule::new(distro).apply(executor, pkg).await?;
+    }
+
+    let mut ssh_hardened = false;
+    if !config.security.ssh_password_auth {
+        security::ssh_harden::SshHardenModule::new(
+            config.security.ssh_password_auth,
+            config.security.ssh_allow_root_login,
+            None,
+        ).apply(executor, pkg).await?;
+        ssh_hardened = true;
+    }
+
+    Ok(ssh_hardened)
+}
+
+pub async fn run_services_and_devtools(
     executor: &mut Executor<'_>,
     pkg: &dyn PackageManager,
     config: &Config,
     distro: &Distro,
 ) -> Result<()> {
-    println!("\n{}", "=== Applying Configuration ===".cyan().bold());
-
-    if config.security.create_user.is_some() || config.security.firewall || config.security.fail2ban || !config.security.ssh_password_auth {
-        println!("\n{}", "Security:".yellow().bold());
-
-        // Copy SSH public key to connecting user first, so new users inherit it
-        if let Some(ref key_path) = config.security.ssh_public_key_path {
-            println!("  Copying public key to VPS...");
-            let key_content = std::fs::read_to_string(key_path)
-                .map_err(|e| anyhow::anyhow!("Failed to read {}: {}", key_path, e))?;
-            let key_content = key_content.trim();
-
-            executor.run("mkdir -p ~/.ssh && chmod 700 ~/.ssh").await?;
-
-            let escaped_key = key_content.replace('\'', "'\\''");
-            executor.run(&format!(
-                "grep -qxF '{}' ~/.ssh/authorized_keys || echo '{}' >> ~/.ssh/authorized_keys",
-                escaped_key, escaped_key
-            )).await?;
-            executor.run("chmod 600 ~/.ssh/authorized_keys").await?;
-
-            println!("  {} Public key copied", "✓".green());
-        }
-
-        if let Some(ref user) = config.security.create_user {
-            security::users::UsersModule::new(user, config.security.user_password.as_deref()).apply(executor, pkg).await?;
-        }
-
-        if config.security.firewall {
-            security::firewall::FirewallModule::new(distro).apply(executor, pkg).await?;
-        }
-
-        if config.security.fail2ban {
-            security::fail2ban::Fail2BanModule::new(distro).apply(executor, pkg).await?;
-        }
-
-        if !config.security.ssh_password_auth {
-            security::ssh_harden::SshHardenModule::new(
-                config.security.ssh_password_auth,
-                config.security.ssh_allow_root_login,
-                None,
-            ).apply(executor, pkg).await?;
-        }
-    }
-
     if config.services.docker || config.services.nginx || config.services.postgres || config.services.redis {
         println!("\n{}", "Services:".green().bold());
 
