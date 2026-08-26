@@ -85,6 +85,14 @@ pub fn run_wizard() -> Result<Config> {
         .default("deploy".to_string())
         .interact_text()?;
 
+    let user_password = if !create_user.is_empty() {
+        Some(Password::new()
+            .with_prompt(&format!("Password for '{}'", create_user))
+            .interact()?)
+    } else {
+        None
+    };
+
     let ssh_password_auth = Confirm::new()
         .with_prompt("Allow SSH password authentication?")
         .default(false)
@@ -211,6 +219,7 @@ pub fn run_wizard() -> Result<Config> {
         },
         security: SecurityConfig {
             create_user: if create_user.is_empty() { None } else { Some(create_user) },
+            user_password,
             ssh_password_auth,
             ssh_public_key_path,
             firewall,

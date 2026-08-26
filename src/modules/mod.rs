@@ -27,7 +27,7 @@ pub async fn run_modules(
         println!("\n{}", "Security:".yellow().bold());
 
         if let Some(ref user) = config.security.create_user {
-            security::users::UsersModule::new(user).apply(executor, pkg).await?;
+            security::users::UsersModule::new(user, config.security.user_password.as_deref()).apply(executor, pkg).await?;
         }
 
         if config.security.firewall {

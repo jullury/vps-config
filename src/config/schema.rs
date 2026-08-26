@@ -24,6 +24,8 @@ pub struct VpsConfig {
 #[derive(Debug, Clone, Deserialize)]
 pub struct SecurityConfig {
     pub create_user: Option<String>,
+    #[serde(default)]
+    pub user_password: Option<String>,
     #[serde(default = "default_true")]
     pub ssh_password_auth: bool,
     #[serde(default = "default_true")]

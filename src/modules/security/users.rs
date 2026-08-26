@@ -7,11 +7,12 @@ use crate::modules::Module;
 
 pub struct UsersModule<'a> {
     username: &'a str,
+    password: Option<&'a str>,
 }
 
 impl<'a> UsersModule<'a> {
-    pub fn new(username: &'a str) -> Self {
-        Self { username }
+    pub fn new(username: &'a str, password: Option<&'a str>) -> Self {
+        Self { username, password }
     }
 }
 
@@ -36,6 +37,15 @@ impl<'a> Module for UsersModule<'a> {
             self.username, self.username
         )).await?;
         executor.run(&format!("chmod 440 /etc/sudoers.d/{}", self.username)).await?;
+
+        // Set user password if provided
+        if let Some(password) = self.password {
+            let escaped = password.replace('\'', "'\\''");
+            executor.run(&format!(
+                "echo '{}:{}' | chpasswd",
+                self.username, escaped
+            )).await?;
+        }
 
         // Copy root's SSH keys to new user
         executor.run(&format!(
