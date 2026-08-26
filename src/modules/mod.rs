@@ -42,6 +42,27 @@ pub async fn run_modules(
         // The schema default is true (password auth allowed), so hardening only runs
         // when the user deliberately disables it.
         if !config.security.ssh_password_auth {
+            // Copy SSH public key to VPS before hardening
+            if let Some(ref key_path) = config.security.ssh_public_key_path {
+                println!("  Copying public key to VPS...");
+                let key_content = std::fs::read_to_string(key_path)
+                    .map_err(|e| anyhow::anyhow!("Failed to read {}: {}", key_path, e))?;
+                let key_content = key_content.trim();
+
+                // Ensure ~/.ssh/authorized_keys exists with correct permissions
+                executor.run("mkdir -p ~/.ssh && chmod 700 ~/.ssh").await?;
+
+                // Append key if not already present
+                let escaped_key = key_content.replace('\'', "'\\''");
+                executor.run(&format!(
+                    "grep -qxF '{}' ~/.ssh/authorized_keys || echo '{}' >> ~/.ssh/authorized_keys",
+                    escaped_key, escaped_key
+                )).await?;
+                executor.run("chmod 600 ~/.ssh/authorized_keys").await?;
+
+                println!("  {} Public key copied", "✓".green());
+            }
+
             security::ssh_harden::SshHardenModule::new(
                 config.security.ssh_password_auth,
                 None,

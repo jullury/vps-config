@@ -1,7 +1,40 @@
 use anyhow::Result;
 use dialoguer::{Input, Select, Confirm};
 use console::style;
+use colored::Colorize;
 use crate::config::schema::*;
+
+fn detect_local_keys() -> Vec<String> {
+    let mut keys = Vec::new();
+    if let Ok(home) = std::env::var("HOME") {
+        let ssh_dir = std::path::PathBuf::from(&home).join(".ssh");
+        if let Ok(entries) = std::fs::read_dir(&ssh_dir) {
+            for entry in entries.flatten() {
+                let name = entry.file_name();
+                let name_str = name.to_string_lossy();
+                if name_str.ends_with(".pub") {
+                    if let Some(stem) = name_str.strip_suffix(".pub") {
+                        // Prefer ed25519 > ecdsa > rsa
+                        if stem == "id_ed25519" || stem == "id_ecdsa" || stem == "id_rsa" || stem.starts_with("id_") {
+                            keys.push(entry.path().to_string_lossy().to_string());
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Sort: ed25519 first, then ecdsa, then rsa, then others
+    keys.sort_by(|a, b| {
+        let priority = |p: &str| -> u8 {
+            if p.contains("ed25519") { 0 }
+            else if p.contains("ecdsa") { 1 }
+            else if p.contains("rsa") { 2 }
+            else { 3 }
+        };
+        priority(a).cmp(&priority(b))
+    });
+    keys
+}
 
 pub fn run_wizard() -> Result<Config> {
     println!("\n{}", style("=== VPS Config Wizard ===").bold().cyan());
@@ -56,6 +89,40 @@ pub fn run_wizard() -> Result<Config> {
         .with_prompt("Allow SSH password authentication?")
         .default(false)
         .interact()?;
+
+    let ssh_public_key_path = if !ssh_password_auth {
+        let keys = detect_local_keys();
+        if keys.is_empty() {
+            println!("  {} No SSH public keys found in ~/.ssh/", "⚠".yellow());
+            println!("  You'll need to add one manually before re-running with SSH hardening.");
+            None
+        } else {
+            let mut items: Vec<String> = keys.iter().map(|k| {
+                let path = std::path::Path::new(k);
+                let stem = path.file_stem().unwrap().to_string_lossy();
+                let content = std::fs::read_to_string(k).unwrap_or_default();
+                let truncated = content.trim().chars().take(50).collect::<String>();
+                format!("{stem}  ({truncated}...)")
+            }).collect();
+            items.push("Enter path manually".to_string());
+
+            let idx = Select::new()
+                .with_prompt("Select public key to copy to VPS")
+                .items(&items)
+                .default(0)
+                .interact()?;
+
+            if idx < keys.len() {
+                Some(keys[idx].clone())
+            } else {
+                Some(Input::new()
+                    .with_prompt("Public key path")
+                    .interact_text()?)
+            }
+        }
+    } else {
+        None
+    };
 
     let firewall = Confirm::new()
         .with_prompt("Enable firewall (ufw/firewalld)?")
@@ -145,6 +212,7 @@ pub fn run_wizard() -> Result<Config> {
         security: SecurityConfig {
             create_user: if create_user.is_empty() { None } else { Some(create_user) },
             ssh_password_auth,
+            ssh_public_key_path,
             firewall,
             fail2ban,
         },

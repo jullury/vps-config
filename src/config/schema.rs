@@ -30,6 +30,8 @@ pub struct SecurityConfig {
     pub firewall: bool,
     #[serde(default = "default_true")]
     pub fail2ban: bool,
+    #[serde(default)]
+    pub ssh_public_key_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
