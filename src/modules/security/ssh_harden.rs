@@ -48,11 +48,20 @@ impl Module for SshHardenModule {
             executor.run(&format!("sed -i 's/^#\\?Port .*/Port {}/' /etc/ssh/sshd_config", port)).await?;
         }
 
-        let restart_result = executor.run("systemctl restart sshd").await;
+        // Detect correct SSH service name (ssh on Debian/Ubuntu, sshd on RHEL/Fedora)
+        let (svc_output, _) = executor.run_with_output(
+            "systemctl list-unit-files | grep -E '^ssh\\.service|^sshd\\.service' | head -1 | awk '{print $1}'"
+        ).await?;
+        let service = svc_output.trim().trim_end_matches(".service");
+        if service.is_empty() {
+            anyhow::bail!("Could not determine SSH service name");
+        }
+
+        let restart_result = executor.run(&format!("systemctl restart {service}")).await;
         if let Err(e) = restart_result {
             eprintln!("  {} SSH restart failed, rolling back configuration: {}", "✗".red(), e);
             executor.run("cp /etc/ssh/sshd_config.bak /etc/ssh/sshd_config").await?;
-            executor.run("systemctl restart sshd").await?;
+            executor.run(&format!("systemctl restart {service}")).await?;
             anyhow::bail!("SSH hardening failed and configuration was rolled back: {}", e);
         }
 
