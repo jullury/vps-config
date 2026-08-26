@@ -116,10 +116,15 @@ pub fn run_wizard() -> Result<Config> {
         .default(false)
         .interact()?;
 
-    let ssh_allow_root_login = Confirm::new()
-        .with_prompt("Allow SSH root login?")
-        .default(false)
-        .interact()?;
+    let ssh_allow_root_login = if create_user.is_empty() {
+        println!("  {} Root login must stay enabled (no non-root user created)", "⚠".yellow());
+        true
+    } else {
+        Confirm::new()
+            .with_prompt("Allow SSH root login?")
+            .default(false)
+            .interact()?
+    };
 
     let ssh_public_key_path = if !ssh_password_auth {
         let keys = detect_local_keys();
