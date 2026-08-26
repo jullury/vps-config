@@ -1,0 +1,25 @@
+[vps]
+ip = "1.2.3.4"
+port = 22
+user = "root"
+auth = "password"
+key_path = "~/.ssh/id_rsa"
+
+[security]
+create_user = "deploy"
+ssh_password_auth = false
+firewall = true
+fail2ban = true
+
+[services]
+docker = true
+nginx = true
+postgres = true
+redis = false
+
+[devtools]
+node = true
+node_version = "22"
+python = true
+python_version = "3.12"
+go = true

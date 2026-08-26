@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Config {
     pub vps: VpsConfig,
     pub security: SecurityConfig,
@@ -19,7 +19,7 @@ pub struct VpsConfig {
     pub key_path: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct SecurityConfig {
     pub create_user: Option<String>,
     #[serde(default = "default_true")]
@@ -30,7 +30,7 @@ pub struct SecurityConfig {
     pub fail2ban: bool,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ServicesConfig {
     #[serde(default)]
     pub docker: bool,
@@ -42,7 +42,7 @@ pub struct ServicesConfig {
     pub redis: bool,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct DevtoolsConfig {
     #[serde(default)]
     pub node: bool,
