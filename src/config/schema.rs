@@ -8,7 +8,7 @@ pub struct Config {
     pub devtools: DevtoolsConfig,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct VpsConfig {
     pub ip: String,
     #[serde(default = "default_port")]

@@ -1,10 +1,21 @@
 use anyhow::Result;
 
-pub struct Executor;
+use super::client::SshSession;
 
-impl Executor {
-    pub fn run(&self, command: &str) -> Result<String> {
-        // Placeholder
-        Ok(String::new())
+pub struct Executor<'a> {
+    session: &'a mut SshSession,
+}
+
+impl<'a> Executor<'a> {
+    pub fn new(session: &'a mut SshSession) -> Self {
+        Self { session }
+    }
+
+    pub async fn run(&mut self, command: &str) -> Result<String> {
+        self.session.call(command).await
+    }
+
+    pub async fn run_with_output(&mut self, command: &str) -> Result<(String, i32)> {
+        self.session.call_with_output(command).await
     }
 }

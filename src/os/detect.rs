@@ -9,7 +9,7 @@ pub enum Distro {
     Fedora,
 }
 
-pub fn detect_distro(executor: &crate::ssh::executor::Executor) -> Result<Distro> {
+pub fn detect_distro(executor: &crate::ssh::executor::Executor<'_>) -> Result<Distro> {
     // Placeholder
     Ok(Distro::Debian)
 }
