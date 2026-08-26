@@ -96,7 +96,7 @@ impl SshClient {
 
     pub async fn connect(&self) -> Result<SshSession> {
         let config = client::Config {
-            inactivity_timeout: Some(Duration::from_secs(30)),
+            inactivity_timeout: Some(Duration::from_secs(300)),
             ..<_>::default()
         };
         let config = Arc::new(config);

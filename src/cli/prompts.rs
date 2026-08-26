@@ -40,9 +40,11 @@ fn detect_local_keys() -> Vec<String> {
 pub fn run_wizard() -> Result<Config> {
     println!("\n{}", style("=== VPS Config Wizard ===").bold().cyan());
 
-    let ip: String = Input::new()
+    let ip: String = Input::<String>::new()
         .with_prompt("VPS IP address")
-        .interact_text()?;
+        .interact_text()?
+        .trim()
+        .to_string();
 
     let port: u16 = Input::new()
         .with_prompt("SSH port")
