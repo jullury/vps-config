@@ -20,14 +20,14 @@ impl DnfManager {
 #[async_trait(?Send)]
 impl PackageManager for DnfManager {
     async fn update(&self, executor: &mut Executor<'_>) -> Result<()> {
-        executor.run("dnf makecache -q").await?;
+        executor.run("sudo dnf makecache -q").await?;
         Ok(())
     }
 
     async fn install(&self, executor: &mut Executor<'_>, packages: &[&str]) -> Result<()> {
         let pkg_str = packages.join(" ");
         executor
-            .run(&format!("dnf install -y -q {}", pkg_str))
+            .run(&format!("sudo dnf install -y -q {}", pkg_str))
             .await?;
         Ok(())
     }
@@ -41,14 +41,14 @@ impl PackageManager for DnfManager {
 
     async fn enable_service(&self, executor: &mut Executor<'_>, service: &str) -> Result<()> {
         executor
-            .run(&format!("systemctl enable {}", service))
+            .run(&format!("sudo systemctl enable {}", service))
             .await?;
         Ok(())
     }
 
     async fn start_service(&self, executor: &mut Executor<'_>, service: &str) -> Result<()> {
         executor
-            .run(&format!("systemctl start {}", service))
+            .run(&format!("sudo systemctl start {}", service))
             .await?;
         Ok(())
     }

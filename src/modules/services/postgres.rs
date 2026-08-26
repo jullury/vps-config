@@ -31,7 +31,7 @@ impl<'a> Module for PostgresModule<'a> {
             }
             Distro::RHEL | Distro::Fedora => {
                 pkg.install(executor, &["postgresql-server", "postgresql-contrib"]).await?;
-                executor.run("postgresql-setup --initdb").await?;
+                executor.run("sudo postgresql-setup --initdb").await?;
                 let (svc_output, _) = executor.run_with_output(
                     "systemctl list-unit-files | grep '^postgresql' | head -1 | awk '{print $1}'"
                 ).await?;

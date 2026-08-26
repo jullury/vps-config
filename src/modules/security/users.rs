@@ -22,7 +22,7 @@ impl<'a> Module for UsersModule<'a> {
         println!("  Creating user: {}", self.username);
 
         // Ensure sudo group exists (Debian) or wheel (RHEL)
-        executor.run("groupadd -f sudo || groupadd -f wheel").await?;
+        executor.run("sudo groupadd -f sudo || sudo groupadd -f wheel").await?;
 
         // Create user with sudo
         executor.run(&format!(

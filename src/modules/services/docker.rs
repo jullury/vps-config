@@ -31,16 +31,16 @@ impl<'a> Module for DockerModule<'a> {
                     _ => unreachable!(),
                 };
                 pkg.install(executor, &["ca-certificates", "curl", "gnupg"]).await?;
-                executor.run("install -m 0755 -d /etc/apt/keyrings").await?;
-                executor.run(&format!("curl -fsSL {repo_url}/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg")).await?;
-                executor.run("chmod a+r /etc/apt/keyrings/docker.gpg").await?;
-                executor.run(&format!("echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] {repo_url} $(lsb_release -cs) stable\" > /etc/apt/sources.list.d/docker.list")).await?;
+                executor.run("sudo install -m 0755 -d /etc/apt/keyrings").await?;
+                executor.run(&format!("curl -fsSL {repo_url}/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg")).await?;
+                executor.run("sudo chmod a+r /etc/apt/keyrings/docker.gpg").await?;
+                executor.run(&format!("echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] {repo_url} $(lsb_release -cs) stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null")).await?;
                 pkg.update(executor).await?;
                 pkg.install(executor, &["docker-ce", "docker-ce-cli", "containerd.io", "docker-compose-plugin"]).await?;
             }
             Distro::RHEL | Distro::Fedora => {
                 pkg.install(executor, &["dnf-plugins-core"]).await?;
-                executor.run("dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo").await?;
+                executor.run("sudo dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo").await?;
                 pkg.install(executor, &["docker-ce", "docker-ce-cli", "containerd.io", "docker-compose-plugin"]).await?;
             }
         }

@@ -26,7 +26,7 @@ impl Module for SshHardenModule {
     async fn apply(&self, executor: &mut Executor<'_>, _pkg: &dyn PackageManager) -> Result<()> {
         println!("  Hardening SSH configuration...");
 
-        executor.run("cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak").await?;
+        executor.run("sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak").await?;
 
         if !self.password_auth {
             // SAFETY: Verify at least one SSH key exists before disabling password auth.
@@ -42,15 +42,15 @@ impl Module for SshHardenModule {
                 );
             }
 
-            executor.run("sed -i 's/^#\\?PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config").await?;
-            executor.run("sed -i 's/^#\\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config").await?;
+            executor.run("sudo sed -i 's/^#\\?PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config").await?;
+            executor.run("sudo sed -i 's/^#\\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config").await?;
         }
 
         // Set PermitRootLogin based on config
         if self.allow_root_login {
-            executor.run("sed -i 's/^#\\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config").await?;
+            executor.run("sudo sed -i 's/^#\\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config").await?;
         } else {
-            executor.run("sed -i 's/^#\\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config").await?;
+            executor.run("sudo sed -i 's/^#\\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config").await?;
         }
 
         if let Some(port) = self.new_port {
@@ -69,7 +69,7 @@ impl Module for SshHardenModule {
         let restart_result = executor.run(&format!("systemctl restart {service}")).await;
         if let Err(e) = restart_result {
             eprintln!("  {} SSH restart failed, rolling back configuration: {}", "✗".red(), e);
-            executor.run("cp /etc/ssh/sshd_config.bak /etc/ssh/sshd_config").await?;
+            executor.run("sudo cp /etc/ssh/sshd_config.bak /etc/ssh/sshd_config").await?;
             executor.run(&format!("systemctl restart {service}")).await?;
             anyhow::bail!("SSH hardening failed and configuration was rolled back: {}", e);
         }

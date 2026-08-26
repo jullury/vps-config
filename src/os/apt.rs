@@ -20,7 +20,7 @@ impl AptManager {
 #[async_trait(?Send)]
 impl PackageManager for AptManager {
     async fn update(&self, executor: &mut Executor<'_>) -> Result<()> {
-        executor.run("apt-get update -qq").await?;
+        executor.run("sudo apt-get update -qq").await?;
         Ok(())
     }
 
@@ -28,7 +28,7 @@ impl PackageManager for AptManager {
         let pkg_str = packages.join(" ");
         executor
             .run(&format!(
-                "DEBIAN_FRONTEND=noninteractive apt-get install -y -qq {}",
+                "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq {}",
                 pkg_str
             ))
             .await?;
@@ -44,14 +44,14 @@ impl PackageManager for AptManager {
 
     async fn enable_service(&self, executor: &mut Executor<'_>, service: &str) -> Result<()> {
         executor
-            .run(&format!("systemctl enable {}", service))
+            .run(&format!("sudo systemctl enable {}", service))
             .await?;
         Ok(())
     }
 
     async fn start_service(&self, executor: &mut Executor<'_>, service: &str) -> Result<()> {
         executor
-            .run(&format!("systemctl start {}", service))
+            .run(&format!("sudo systemctl start {}", service))
             .await?;
         Ok(())
     }

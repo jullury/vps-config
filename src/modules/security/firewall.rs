@@ -21,21 +21,21 @@ impl<'a> Module for FirewallModule<'a> {
         match self.distro {
             Distro::Debian | Distro::Ubuntu => {
                 pkg.install(executor, &["ufw"]).await?;
-                executor.run("ufw default deny incoming").await?;
-                executor.run("ufw default allow outgoing").await?;
-                executor.run("ufw allow ssh").await?;
-                executor.run("ufw allow 80/tcp").await?;
-                executor.run("ufw allow 443/tcp").await?;
-                executor.run("ufw --force enable").await?;
+                executor.run("sudo ufw default deny incoming").await?;
+                executor.run("sudo ufw default allow outgoing").await?;
+                executor.run("sudo ufw allow ssh").await?;
+                executor.run("sudo ufw allow 80/tcp").await?;
+                executor.run("sudo ufw allow 443/tcp").await?;
+                executor.run("sudo ufw --force enable").await?;
             }
             Distro::RHEL | Distro::Fedora => {
                 pkg.install(executor, &["firewalld"]).await?;
                 pkg.enable_service(executor, "firewalld").await?;
                 pkg.start_service(executor, "firewalld").await?;
-                executor.run("firewall-cmd --permanent --add-service=ssh").await?;
-                executor.run("firewall-cmd --permanent --add-service=http").await?;
-                executor.run("firewall-cmd --permanent --add-service=https").await?;
-                executor.run("firewall-cmd --reload").await?;
+                executor.run("sudo firewall-cmd --permanent --add-service=ssh").await?;
+                executor.run("sudo firewall-cmd --permanent --add-service=http").await?;
+                executor.run("sudo firewall-cmd --permanent --add-service=https").await?;
+                executor.run("sudo firewall-cmd --reload").await?;
             }
         }
         println!("  {} Firewall configured", "✓".green());
