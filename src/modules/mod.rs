@@ -36,7 +36,7 @@ pub async fn run_modules(
         }
 
         if config.security.fail2ban {
-            security::fail2ban::Fail2BanModule.apply(executor, pkg).await?;
+            security::fail2ban::Fail2BanModule::new(distro).apply(executor, pkg).await?;
         }
 
         // SSH hardening requires explicit opt-in: set ssh_password_auth = false in config.
@@ -79,7 +79,8 @@ pub async fn run_modules(
             devtools::python::PythonModule::new(ver).apply(executor, pkg).await?;
         }
         if config.devtools.go {
-            devtools::go::GoModule.apply(executor, pkg).await?;
+            let ver = config.devtools.go_version.as_deref().unwrap_or("1.22.0");
+            devtools::go::GoModule::new(ver).apply(executor, pkg).await?;
         }
     }
 

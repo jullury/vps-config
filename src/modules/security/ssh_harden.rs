@@ -5,24 +5,22 @@ use crate::os::PackageManager;
 use crate::ssh::executor::Executor;
 use crate::modules::Module;
 
-pub struct SshHardenModule<'a> {
+pub struct SshHardenModule {
     password_auth: bool,
     new_port: Option<u16>,
-    marker: std::marker::PhantomData<&'a ()>,
 }
 
-impl<'a> SshHardenModule<'a> {
+impl SshHardenModule {
     pub fn new(password_auth: bool, new_port: Option<u16>) -> Self {
         Self {
             password_auth,
             new_port,
-            marker: std::marker::PhantomData,
         }
     }
 }
 
 #[async_trait(?Send)]
-impl<'a> Module for SshHardenModule<'a> {
+impl Module for SshHardenModule {
     fn name(&self) -> &str { "ssh_harden" }
 
     async fn apply(&self, executor: &mut Executor<'_>, _pkg: &dyn PackageManager) -> Result<()> {
@@ -52,7 +50,13 @@ impl<'a> Module for SshHardenModule<'a> {
             executor.run(&format!("sed -i 's/^#\\?Port .*/Port {}/' /etc/ssh/sshd_config", port)).await?;
         }
 
-        executor.run("systemctl restart sshd").await?;
+        let restart_result = executor.run("systemctl restart sshd").await;
+        if let Err(e) = restart_result {
+            eprintln!("  {} SSH restart failed, rolling back configuration: {}", "✗".red(), e);
+            executor.run("cp /etc/ssh/sshd_config.bak /etc/ssh/sshd_config").await?;
+            executor.run("systemctl restart sshd").await?;
+            anyhow::bail!("SSH hardening failed and configuration was rolled back: {}", e);
+        }
 
         println!("  {} SSH hardened", "✓".green());
         println!("  {} WARNING: SSH restart with new config. Verify you can still connect!", "⚠".yellow());

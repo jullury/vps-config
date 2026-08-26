@@ -30,7 +30,7 @@ impl<'a> Module for FirewallModule<'a> {
                 executor.run("ufw allow 443/tcp").await?;
                 executor.run("ufw --force enable").await?;
             }
-            Distro::RHEL | Distro::CentOS | Distro::Fedora => {
+            Distro::RHEL | Distro::Fedora => {
                 pkg.install(executor, &["firewalld"]).await?;
                 pkg.enable_service(executor, "firewalld").await?;
                 pkg.start_service(executor, "firewalld").await?;

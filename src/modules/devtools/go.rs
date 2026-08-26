@@ -5,10 +5,18 @@ use crate::os::PackageManager;
 use crate::ssh::executor::Executor;
 use crate::modules::Module;
 
-pub struct GoModule;
+pub struct GoModule<'a> {
+    version: &'a str,
+}
+
+impl<'a> GoModule<'a> {
+    pub fn new(version: &'a str) -> Self {
+        Self { version }
+    }
+}
 
 #[async_trait(?Send)]
-impl Module for GoModule {
+impl<'a> Module for GoModule<'a> {
     fn name(&self) -> &str { "go" }
 
     async fn apply(&self, executor: &mut Executor<'_>, _pkg: &dyn PackageManager) -> Result<()> {
@@ -18,12 +26,23 @@ impl Module for GoModule {
             return Ok(());
         }
 
-        executor.run("wget -q https://go.dev/dl/go1.22.0.linux-amd64.tar.gz -O /tmp/go.tar.gz").await?;
+        let (arch_output, _) = executor.run_with_output("uname -m").await?;
+        let arch = match arch_output.trim() {
+            "x86_64" => "amd64",
+            "aarch64" => "arm64",
+            other => anyhow::bail!("Unsupported architecture: {}", other),
+        };
+
+        let url = format!(
+            "https://go.dev/dl/go{}.linux-{}.tar.gz",
+            self.version, arch
+        );
+        executor.run(&format!("wget -q {url} -O /tmp/go.tar.gz")).await?;
         executor.run("rm -rf /usr/local/go && tar -C /usr/local -xzf /tmp/go.tar.gz").await?;
         executor.run("echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile.d/go.sh").await?;
         executor.run("rm /tmp/go.tar.gz").await?;
 
-        println!("  {} Go installed", "✓".green());
+        println!("  {} Go {} installed", "✓".green(), self.version);
         Ok(())
     }
 }

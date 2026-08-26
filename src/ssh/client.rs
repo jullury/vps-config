@@ -92,15 +92,6 @@ impl SshClient {
     }
 
     pub async fn connect(&self) -> Result<SshSession> {
-        let key_path = self
-            .config
-            .key_path
-            .as_ref()
-            .context("SSH key path required")?;
-        let key_path = shellexpand::tilde(key_path);
-        let key_pair = load_secret_key(key_path.as_ref(), None)
-            .context("Failed to load SSH private key")?;
-
         let config = client::Config {
             inactivity_timeout: Some(Duration::from_secs(30)),
             ..<_>::default()
@@ -111,18 +102,40 @@ impl SshClient {
         let addr = (&*self.config.ip, self.config.port);
         let mut session = client::connect(config, addr, handler).await?;
 
-        let auth_res = session
-            .authenticate_publickey(
-                &self.config.user,
-                PrivateKeyWithHashAlg::new(
-                    Arc::new(key_pair),
-                    session.best_supported_rsa_hash().await?.flatten(),
-                ),
-            )
-            .await?;
+        let auth_res = match self.config.auth.as_str() {
+            "password" => {
+                let password = self
+                    .config
+                    .password
+                    .as_deref()
+                    .context("Password required for password authentication")?;
+                session
+                    .authenticate_password(&self.config.user, password)
+                    .await?
+            }
+            "key" | _ => {
+                let key_path = self
+                    .config
+                    .key_path
+                    .as_ref()
+                    .context("SSH key path required for public key authentication")?;
+                let key_path = shellexpand::tilde(key_path);
+                let key_pair = load_secret_key(key_path.as_ref(), None)
+                    .context("Failed to load SSH private key")?;
+                session
+                    .authenticate_publickey(
+                        &self.config.user,
+                        PrivateKeyWithHashAlg::new(
+                            Arc::new(key_pair),
+                            session.best_supported_rsa_hash().await?.flatten(),
+                        ),
+                    )
+                    .await?
+            }
+        };
 
         if !auth_res.success() {
-            anyhow::bail!("SSH public key authentication failed");
+            anyhow::bail!("SSH authentication failed");
         }
 
         Ok(SshSession { session })

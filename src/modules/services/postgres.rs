@@ -28,16 +28,24 @@ impl<'a> Module for PostgresModule<'a> {
         match self.distro {
             Distro::Debian | Distro::Ubuntu => {
                 pkg.install(executor, &["postgresql", "postgresql-contrib"]).await?;
+                pkg.enable_service(executor, "postgresql").await?;
+                pkg.start_service(executor, "postgresql").await?;
             }
             Distro::RHEL | Distro::Fedora => {
                 pkg.install(executor, &["postgresql-server", "postgresql-contrib"]).await?;
                 executor.run("postgresql-setup --initdb").await?;
+                let (svc_output, _) = executor.run_with_output(
+                    "systemctl list-unit-files | grep '^postgresql' | head -1 | awk '{print $1}'"
+                ).await?;
+                let service = svc_output.trim();
+                if service.is_empty() {
+                    anyhow::bail!("Could not determine PostgreSQL service name on this system");
+                }
+                pkg.enable_service(executor, service).await?;
+                pkg.start_service(executor, service).await?;
             }
             _ => anyhow::bail!("PostgreSQL not supported on this distro"),
         }
-
-        pkg.enable_service(executor, "postgresql").await?;
-        pkg.start_service(executor, "postgresql").await?;
 
         println!("  {} PostgreSQL installed", "✓".green());
         Ok(())

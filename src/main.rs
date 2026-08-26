@@ -17,11 +17,23 @@ async fn main() -> anyhow::Result<()> {
     let config = if let Some(ref path) = args.config {
         config::loader::load_config(Path::new(path))?
     } else {
-        let default_path = Path::new("config.toml");
-        if default_path.exists() {
-            config::loader::load_config(default_path)?
-        } else {
-            cli::prompts::run_wizard()?
+        let xdg_config = dirs::config_dir()
+            .map(|p| p.join("vps-config").join("config.toml"));
+        let config_path = xdg_config
+            .as_ref()
+            .filter(|p| p.exists())
+            .cloned()
+            .or_else(|| {
+                let cwd_path = Path::new("config.toml").to_path_buf();
+                if cwd_path.exists() {
+                    Some(cwd_path)
+                } else {
+                    None
+                }
+            });
+        match config_path {
+            Some(path) => config::loader::load_config(&path)?,
+            None => cli::prompts::run_wizard()?,
         }
     };
 
@@ -38,7 +50,7 @@ async fn main() -> anyhow::Result<()> {
         os::detect::Distro::Debian | os::detect::Distro::Ubuntu => {
             Box::new(os::apt::AptManager::new())
         }
-        os::detect::Distro::RHEL | os::detect::Distro::CentOS | os::detect::Distro::Fedora => {
+        os::detect::Distro::RHEL | os::detect::Distro::Fedora => {
             Box::new(os::dnf::DnfManager::new())
         }
     };

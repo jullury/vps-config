@@ -17,6 +17,7 @@ pub struct VpsConfig {
     pub user: String,
     pub auth: String,
     pub key_path: Option<String>,
+    pub password: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -52,6 +53,7 @@ pub struct DevtoolsConfig {
     pub python_version: Option<String>,
     #[serde(default)]
     pub go: bool,
+    pub go_version: Option<String>,
 }
 
 fn default_port() -> u16 { 22 }

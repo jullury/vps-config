@@ -37,6 +37,14 @@ pub fn run_wizard() -> Result<Config> {
         None
     };
 
+    let password = if auth == "password" {
+        Some(Input::new()
+            .with_prompt("SSH password")
+            .interact_text()?)
+    } else {
+        None
+    };
+
     println!("\n{}", style("--- Security ---").yellow().bold());
 
     let create_user: String = Input::new()
@@ -116,6 +124,15 @@ pub fn run_wizard() -> Result<Config> {
         .default(true)
         .interact()?;
 
+    let go_version = if go {
+        Some(Input::new()
+            .with_prompt("Go version")
+            .default("1.22.0".to_string())
+            .interact_text()?)
+    } else {
+        None
+    };
+
     Ok(Config {
         vps: VpsConfig {
             ip,
@@ -123,6 +140,7 @@ pub fn run_wizard() -> Result<Config> {
             user,
             auth,
             key_path,
+            password,
         },
         security: SecurityConfig {
             create_user: if create_user.is_empty() { None } else { Some(create_user) },
@@ -142,6 +160,7 @@ pub fn run_wizard() -> Result<Config> {
             python,
             python_version,
             go,
+            go_version,
         },
     })
 }

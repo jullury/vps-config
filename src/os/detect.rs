@@ -5,7 +5,6 @@ pub enum Distro {
     Debian,
     Ubuntu,
     RHEL,
-    CentOS,
     Fedora,
 }
 
