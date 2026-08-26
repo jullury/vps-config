@@ -70,6 +70,24 @@ pub fn run_wizard() -> Result<Config> {
         None
     };
 
+    let key_passphrase = if auth == "key" {
+        if let Some(ref path) = key_path {
+            let expanded = shellexpand::tilde(path);
+            match std::fs::read_to_string(expanded.as_ref()) {
+                Ok(content) if content.contains("ENCRYPTED") => {
+                    Some(Password::new()
+                        .with_prompt("Key passphrase (key is encrypted)")
+                        .interact()?)
+                }
+                _ => None,
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
     let password = if auth == "password" {
         Some(Password::new()
             .with_prompt("SSH password")
@@ -215,6 +233,7 @@ pub fn run_wizard() -> Result<Config> {
             user,
             auth,
             key_path,
+            key_passphrase,
             password,
         },
         security: SecurityConfig {

@@ -109,7 +109,8 @@ impl SshClient {
                     .as_ref()
                     .context("SSH key path required for public key authentication")?;
                 let key_path = shellexpand::tilde(key_path);
-                let key_pair = load_secret_key(key_path.as_ref(), None)
+                let passphrase = self.config.key_passphrase.as_deref();
+                let key_pair = load_secret_key(key_path.as_ref(), passphrase)
                     .context("Failed to load SSH private key")?;
                 session
                     .authenticate_publickey(

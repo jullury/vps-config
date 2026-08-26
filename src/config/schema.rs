@@ -18,6 +18,8 @@ pub struct VpsConfig {
     pub auth: String,
     pub key_path: Option<String>,
     #[serde(default)]
+    pub key_passphrase: Option<String>,
+    #[serde(default)]
     pub password: Option<String>,
 }
 
