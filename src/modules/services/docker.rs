@@ -49,9 +49,9 @@ impl<'a> Module for DockerModule<'a> {
         pkg.enable_service(executor, "docker").await?;
         pkg.start_service(executor, "docker").await?;
 
-        // Add user to docker group
+        // Add user to docker and wheel groups
         if let Some(user) = self.user {
-            executor.run(&format!("sudo usermod -aG docker {}", user)).await?;
+            executor.run(&format!("sudo usermod -aG docker,wheel {}", user)).await?;
         }
 
         println!("  {} Docker installed", "✓".green());
