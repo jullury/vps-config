@@ -21,6 +21,8 @@ pub struct VpsConfig {
     pub key_passphrase: Option<String>,
     #[serde(default)]
     pub password: Option<String>,
+    #[serde(default)]
+    pub sudo_password: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

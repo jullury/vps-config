@@ -4,6 +4,8 @@ port = 22
 user = "root"
 auth = "password"
 key_path = "~/.ssh/id_rsa"
+# Required when user is not root (for privileged/sudo commands)
+# sudo_password = "your-sudo-password"
 
 [security]
 create_user = "deploy"
