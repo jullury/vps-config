@@ -9,6 +9,9 @@ fn test_ssh_client_creation() {
         user: "root".to_string(),
         auth: "key".to_string(),
         key_path: Some("~/.ssh/id_rsa".to_string()),
+        key_passphrase: None,
+        password: None,
+        sudo_password: None,
     };
     let client = SshClient::new(&config);
     assert!(client.is_ok());
@@ -22,6 +25,9 @@ fn test_ssh_client_stores_config() {
         user: "deploy".to_string(),
         auth: "key".to_string(),
         key_path: Some("~/.ssh/deploy_key".to_string()),
+        key_passphrase: None,
+        password: None,
+        sudo_password: None,
     };
     let client = SshClient::new(&config).unwrap();
     let retrieved = client.config();
