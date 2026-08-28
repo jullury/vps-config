@@ -38,9 +38,10 @@ logpath = {logpath}
 maxretry = 3
 "#);
 
+        let esc_dq = jail_config.replace('"', "\\\"");
         executor.run(&format!(
-            "echo '{}' > /etc/fail2ban/jail.local",
-            jail_config.replace('\n', "\\n")
+            "sudo sh -c 'echo \"{}\" > /etc/fail2ban/jail.local'",
+            esc_dq
         )).await?;
 
         pkg.enable_service(executor, "fail2ban").await?;
