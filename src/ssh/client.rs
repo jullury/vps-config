@@ -94,6 +94,11 @@ impl SshClient {
         })
     }
 
+    #[allow(dead_code)]
+    pub fn config(&self) -> &VpsConfig {
+        &self.config
+    }
+
     pub async fn connect(&self) -> Result<SshSession> {
         let config = client::Config {
             inactivity_timeout: Some(Duration::from_secs(300)),
