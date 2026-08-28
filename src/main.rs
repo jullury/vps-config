@@ -71,9 +71,14 @@ async fn main() -> anyhow::Result<()> {
             if let Some(ref user) = config.security.create_user {
                 let mut cfg = config.vps.clone();
                 cfg.user = user.clone();
-                // Use the new user's SSH keys (copied from root)
                 cfg.auth = "key".to_string();
-                cfg.password = None;
+                // Derive private key path from public key path if not already set
+                cfg.key_path = cfg.key_path.or_else(|| {
+                    config.security.ssh_public_key_path.as_ref().map(|p| {
+                        p.strip_suffix(".pub").unwrap_or(p).to_string()
+                    })
+                });
+                // Keep password for sudo operations
                 cfg
             } else {
                 config.vps.clone()
