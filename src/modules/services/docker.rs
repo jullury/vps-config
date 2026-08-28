@@ -33,9 +33,10 @@ impl<'a> Module for DockerModule<'a> {
                 };
                 pkg.install(executor, &["ca-certificates", "curl", "gnupg"]).await?;
                 executor.run("sudo install -m 0755 -d /etc/apt/keyrings").await?;
-                executor.run(&format!("curl -fsSL {repo_url}/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg")).await?;
+                executor.run(&format!("curl -fsSL {repo_url}/gpg -o /tmp/docker.gpg")).await?;
+                executor.run("sudo sh -c 'gpg --batch --dearmor -o /etc/apt/keyrings/docker.gpg < /tmp/docker.gpg'").await?;
                 executor.run("sudo chmod a+r /etc/apt/keyrings/docker.gpg").await?;
-                executor.run(&format!("echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] {repo_url} $(lsb_release -cs) stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null")).await?;
+                executor.run(&format!("sudo sh -c 'echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] {repo_url} $(lsb_release -cs) stable\" > /etc/apt/sources.list.d/docker.list'")).await?;
                 pkg.update(executor).await?;
                 pkg.install(executor, &["docker-ce", "docker-ce-cli", "containerd.io", "docker-compose-plugin"]).await?;
             }
