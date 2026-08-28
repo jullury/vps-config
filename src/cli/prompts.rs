@@ -106,6 +106,16 @@ pub fn run_wizard() -> Result<Config> {
         None
     };
 
+    // If connecting as non-root, sudo/root access needs a password
+    let is_root = user.eq_ignore_ascii_case("root");
+    let sudo_password = if is_root {
+        None
+    } else {
+        Some(Password::new()
+            .with_prompt("sudo password (for root access)")
+            .interact()?)
+    };
+
     println!("\n{}", style("--- Security ---").yellow().bold());
 
     let create_user: String = Input::new()
@@ -264,6 +274,7 @@ pub fn run_wizard() -> Result<Config> {
             key_path,
             key_passphrase,
             password,
+            sudo_password,
         },
         security: SecurityConfig {
             create_user: if create_user.is_empty() { None } else { Some(create_user) },

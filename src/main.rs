@@ -40,7 +40,11 @@ async fn main() -> anyhow::Result<()> {
     println!("\n{} Connecting to {}...", "->".blue(), config.vps.ip);
     let client = ssh::client::SshClient::new(&config.vps)?;
     let mut session = client.connect().await?;
+
     let mut executor = ssh::executor::Executor::new(&mut session);
+    if let Some(sudo_pw) = config.vps.sudo_password.as_deref() {
+        executor.with_sudo_password(sudo_pw);
+    }
 
     println!("{} Detecting OS...", "->".blue());
     let distro = os::detect::detect_distro(&mut executor).await?;
@@ -90,6 +94,9 @@ async fn main() -> anyhow::Result<()> {
         let reconnect_client = ssh::client::SshClient::new(&reconnect_config)?;
         let mut session = reconnect_client.connect().await?;
         let mut executor = ssh::executor::Executor::new(&mut session);
+        if let Some(sudo_pw) = reconnect_config.sudo_password.as_deref() {
+            executor.with_sudo_password(sudo_pw);
+        }
         modules::run_services_and_devtools(&mut executor, &*pkg, &config, &distro).await?;
     } else {
         modules::run_services_and_devtools(&mut executor, &*pkg, &config, &distro).await?;
