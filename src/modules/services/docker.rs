@@ -7,12 +7,12 @@ use crate::modules::Module;
 
 pub struct DockerModule<'a> {
     distro: &'a Distro,
-    user: Option<&'a str>,
+    users: Vec<&'a str>,
 }
 
 impl<'a> DockerModule<'a> {
-    pub fn new(distro: &'a Distro, user: Option<&'a str>) -> Self {
-        Self { distro, user }
+    pub fn new(distro: &'a Distro, users: Vec<&'a str>) -> Self {
+        Self { distro, users }
     }
 }
 
@@ -50,8 +50,10 @@ impl<'a> Module for DockerModule<'a> {
         pkg.enable_service(executor, "docker").await?;
         pkg.start_service(executor, "docker").await?;
 
-        // Add user to docker and wheel groups
-        if let Some(user) = self.user {
+        // Add users to docker and wheel groups
+        let mut users = self.users.clone();
+        users.dedup();
+        for user in users {
             executor.run(&format!("sudo usermod -aG docker,wheel {}", user)).await?;
         }
 

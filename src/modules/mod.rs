@@ -77,7 +77,14 @@ pub async fn run_services_and_devtools(
         println!("\n{}", "Services:".green().bold());
 
         if config.services.docker {
-            services::docker::DockerModule::new(distro, config.security.create_user.as_deref()).apply(executor, pkg).await?;
+            let mut users: Vec<&str> = Vec::new();
+            if let Some(ref u) = config.security.create_user {
+                users.push(u);
+            }
+            if !config.vps.user.eq_ignore_ascii_case("root") {
+                users.push(&config.vps.user);
+            }
+            services::docker::DockerModule::new(distro, users).apply(executor, pkg).await?;
         }
         if config.services.nginx {
             services::nginx::NginxModule.apply(executor, pkg).await?;
