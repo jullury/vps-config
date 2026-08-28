@@ -43,7 +43,7 @@ pub async fn run_security_modules(
     }
 
     if let Some(ref user) = config.security.create_user {
-        security::users::UsersModule::new(user, config.security.user_password.as_deref()).apply(executor, pkg).await?;
+        security::users::UsersModule::new(user, config.security.user_password.as_deref(), &config.vps.user).apply(executor, pkg).await?;
     }
 
     if config.security.firewall {
