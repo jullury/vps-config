@@ -30,7 +30,7 @@ impl<'a> Module for RedisModule<'a> {
             Distro::RHEL | Distro::Fedora => "/etc/redis.conf",
         };
 
-        executor.run(&format!("sed -i 's/^bind .*/bind 127.0.0.1/' {conf_path}")).await?;
+        executor.run(&format!("sudo sed -i 's/^bind .*/bind 127.0.0.1/' {conf_path}")).await?;
 
         pkg.enable_service(executor, "redis").await?;
         pkg.start_service(executor, "redis").await?;

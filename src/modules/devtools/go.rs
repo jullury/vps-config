@@ -36,8 +36,8 @@ impl<'a> Module for GoModule<'a> {
             self.version, arch
         );
         executor.run(&format!("wget -q {url} -O /tmp/go.tar.gz")).await?;
-        executor.run("sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf /tmp/go.tar.gz").await?;
-        executor.run("sudo tee /etc/profile.d/go.sh > /dev/null << 'EOF'\nexport PATH=$PATH:/usr/local/go/bin\nEOF").await?;
+        executor.run("sudo sh -c 'rm -rf /usr/local/go && tar -C /usr/local -xzf /tmp/go.tar.gz'").await?;
+        executor.run("sudo sh -c 'echo \"export PATH=$PATH:/usr/local/go/bin\" > /etc/profile.d/go.sh'").await?;
         executor.run("rm /tmp/go.tar.gz").await?;
 
         println!("  {} Go {} installed", "✓".green(), self.version);
